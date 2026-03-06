@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Angular Highlight",
+  "version": "1.0.0",
+  "description": "Highlights Angular components when change detection runs - like React DevTools",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Angular Highlight"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
