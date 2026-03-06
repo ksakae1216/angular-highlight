@@ -6,6 +6,8 @@
 
   let enabled = true;
   let highlightScheduled = false;
+  let lastHighlightTime = 0;
+  const HIGHLIGHT_THROTTLE_MS = 150; // 最低150ms間隔でハイライト
 
   // ---- メッセージ受信 (content.js からON/OFF制御) ----
   window.addEventListener('message', (event) => {
@@ -105,13 +107,16 @@
   }
 
   /**
-   * ハイライトをスケジュール（重複実行を防ぐ）
+   * ハイライトをスケジュール（重複実行 & スロットルで制限）
    */
   function scheduleHighlight() {
     if (!enabled || highlightScheduled) return;
+    const now = Date.now();
+    if (now - lastHighlightTime < HIGHLIGHT_THROTTLE_MS) return;
     highlightScheduled = true;
     Promise.resolve().then(() => {
       highlightScheduled = false;
+      lastHighlightTime = Date.now();
       highlightAllComponents();
     });
   }
@@ -125,8 +130,11 @@
     Zone.prototype.runTask = function (task, applyThis, applyArgs) {
       const result = originalRunTask.call(this, task, applyThis, applyArgs);
 
-      // Angular の Zone（name === 'angular'）でタスクが完了したタイミングを検知
-      if (this.name === 'angular') {
+      // macroTask / eventTask のみ対象（microTask は除外して負荷を減らす）
+      if (
+        this.name === 'angular' &&
+        task.type !== 'microTask'
+      ) {
         scheduleHighlight();
       }
 
@@ -137,6 +145,7 @@
   }
 
   // ---- Phase 2: MutationObserver (Angular Signals / Zoneless Angular 対応) ----
+  // Zone.js がある場合は MutationObserver を無効化（Zone.js フックで十分）
 
   function setupMutationObserver() {
     let mutationTimer = null;
@@ -202,8 +211,8 @@
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: true,
-      characterData: true,
+      attributes: false,  // 属性変更は対象外（頻度が高すぎる）
+      characterData: false, // テキスト変更も対象外
     });
 
     return observer;
@@ -214,14 +223,12 @@
   function init() {
     const zonePatched = patchZoneJs();
 
-    // Zone.js が使われていない場合（Zoneless Angular）や Signals のために
-    // MutationObserver も常に設定する
-    setupMutationObserver();
-
-    if (zonePatched) {
-      console.debug('[Angular Highlight] Zone.js フック有効');
-    } else {
+    // Zone.js がない場合（Zoneless / Signals）のみ MutationObserver を使う
+    if (!zonePatched) {
+      setupMutationObserver();
       console.debug('[Angular Highlight] Zone.js なし - MutationObserver のみ');
+    } else {
+      console.debug('[Angular Highlight] Zone.js フック有効');
     }
   }
 
