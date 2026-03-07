@@ -1,8 +1,10 @@
+<p align="center">
+  <img src="./icons/icon128.png" width="96" alt="Angular Highlight">
+</p>
+
 # Angular Highlight
 
 A Chrome extension that highlights Angular components when change detection runs — just like React DevTools' "Highlight updates when components render".
-
-![Angular Highlight Demo](https://raw.githubusercontent.com/ksakae1216/angular-highlight/main/icons/icon128.png)
 
 ## Features
 
