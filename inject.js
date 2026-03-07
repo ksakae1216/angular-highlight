@@ -11,12 +11,12 @@
 
   // ---- メッセージ受信 (content.js からON/OFF制御) ----
   window.addEventListener('message', (event) => {
-    if (
-      event.source === window &&
-      event.data &&
-      event.data.type === 'ANGULAR_HIGHLIGHT_SET_ENABLED'
-    ) {
+    if (event.source !== window || !event.data) return;
+    if (event.data.type === 'ANGULAR_HIGHLIGHT_SET_ENABLED') {
       enabled = event.data.enabled;
+    }
+    if (event.data.type === 'ANGULAR_HIGHLIGHT_SET_COLORS') {
+      colors = event.data.colors;
     }
   });
 
@@ -55,11 +55,18 @@
     return components;
   }
 
-  // Zone.js → 緑、Signals/Zoneless → 青
-  const COLORS = {
-    zone:   { border: 'rgba(0, 200, 100, 1)',  bg: 'rgba(0, 200, 100, 0.1)' },
-    signal: { border: 'rgba(50, 150, 255, 1)', bg: 'rgba(50, 150, 255, 0.1)' },
+  // ハイライトカラー（popup から変更可能）
+  let colors = {
+    zone:   '#00c864',
+    signal: '#3296ff',
   };
+
+  function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
   /**
    * 要素の位置に固定オーバーレイをハイライト表示する
@@ -74,7 +81,9 @@
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
     if (rect.right < 0 || rect.left > window.innerWidth) return;
 
-    const { border, bg } = COLORS[colorKey];
+    const hex = colors[colorKey];
+    const border = hexToRgba(hex, 1);
+    const bg     = hexToRgba(hex, 0.1);
     const overlay = document.createElement('div');
     overlay.setAttribute('data-ng-hl', '');
     overlay.style.cssText = `

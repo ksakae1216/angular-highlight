@@ -185,6 +185,82 @@
 
     .dot-green { background: #00c864; }
     .dot-blue { background: #4a9eff; }
+
+    .color-section {
+      margin-top: 12px;
+      background: #16213e;
+      border-radius: 10px;
+      border: 1px solid #0f3460;
+      overflow: hidden;
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+    }
+
+    .color-row + .color-row {
+      border-top: 1px solid #0f3460;
+    }
+
+    .color-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .color-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .color-hex {
+      font-size: 11px;
+      color: #888;
+      font-family: monospace;
+      width: 52px;
+      text-align: right;
+    }
+
+    input[type="color"] {
+      width: 32px;
+      height: 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+    }
+
+    .reset-btn {
+      margin-top: 8px;
+      width: 100%;
+      background: none;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      color: #888;
+      font-size: 11px;
+      padding: 5px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .reset-btn:hover {
+      color: #ccc;
+      border-color: #444;
+    }
   </style>
 </head>
 <body>
@@ -210,17 +286,29 @@
 
     <div class="status-badge on" id="status">有効 - コンポーネントを監視中</div>
 
-    <div class="info">
-      <div class="info-title">対応方式</div>
-      <div class="info-item">
-        <div class="dot dot-green"></div>
-        <span>Zone.js (Angular v2〜v17)</span>
+    <div class="color-section">
+      <div class="color-row">
+        <div class="color-label">
+          <div class="color-dot" id="dot-zone"></div>
+          <span>Zone.js</span>
+        </div>
+        <div class="color-picker-wrap">
+          <span class="color-hex" id="hex-zone"></span>
+          <input type="color" id="color-zone">
+        </div>
       </div>
-      <div class="info-item">
-        <div class="dot dot-blue"></div>
-        <span>Signals / Zoneless (Angular v16+)</span>
+      <div class="color-row">
+        <div class="color-label">
+          <div class="color-dot" id="dot-signal"></div>
+          <span>Signals / Zoneless</span>
+        </div>
+        <div class="color-picker-wrap">
+          <span class="color-hex" id="hex-signal"></span>
+          <input type="color" id="color-signal">
+        </div>
       </div>
     </div>
+    <button class="reset-btn" id="reset-btn">デフォルトに戻す</button>
   </div>
 
   <script src="popup.js"></script>
