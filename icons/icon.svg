@@ -1,16 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Angular の "A" シンボル（シールド形） -->
-  <polygon points="64,22 96,34 91,84 64,98 37,84 32,34"
-           fill="white" opacity="0.95"/>
-  <polygon points="64,32 87,40 83,78 64,88 45,78 41,40"
+  <!-- Angular シールド（赤・ほぼ全面） -->
+  <polygon points="64,5 114,24 106,101 64,123 22,101 14,24"
            fill="#DD0031"/>
 
-  <!-- "A" の文字 -->
-  <text x="64" y="75" font-family="Arial, sans-serif" font-size="38"
+  <!-- "A" の文字（大きく） -->
+  <text x="64" y="100" font-family="Arial, sans-serif" font-size="105"
         font-weight="900" fill="white" text-anchor="middle">A</text>
 
-  <!-- 右下の緑のハイライトドット（"highlight" を表現） -->
-  <circle cx="98" cy="98" r="16" fill="#00C864"/>
-  <path d="M90 98 L96 104 L108 92" stroke="white" stroke-width="3"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- 雷アイコン -->
+  <text x="105" y="122" font-size="44" text-anchor="middle">⚡</text>
 </svg>
