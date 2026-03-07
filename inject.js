@@ -55,10 +55,18 @@
     return components;
   }
 
+  // Zone.js → 緑、Signals/Zoneless → 青
+  const COLORS = {
+    zone:   { border: 'rgba(0, 200, 100, 1)',  bg: 'rgba(0, 200, 100, 0.1)' },
+    signal: { border: 'rgba(50, 150, 255, 1)', bg: 'rgba(50, 150, 255, 0.1)' },
+  };
+
   /**
    * 要素の位置に固定オーバーレイをハイライト表示する
+   * @param {Element} el
+   * @param {'zone'|'signal'} colorKey
    */
-  function highlightElement(el) {
+  function highlightElement(el, colorKey = 'zone') {
     const rect = el.getBoundingClientRect();
 
     // 画面外や非表示の要素はスキップ
@@ -66,15 +74,17 @@
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
     if (rect.right < 0 || rect.left > window.innerWidth) return;
 
+    const { border, bg } = COLORS[colorKey];
     const overlay = document.createElement('div');
+    overlay.setAttribute('data-ng-hl', '');
     overlay.style.cssText = `
       position: fixed;
       top: ${rect.top}px;
       left: ${rect.left}px;
       width: ${rect.width}px;
       height: ${rect.height}px;
-      border: 2px solid rgba(0, 200, 100, 1);
-      background: rgba(0, 200, 100, 0.1);
+      border: 2px solid ${border};
+      background: ${bg};
       pointer-events: none;
       z-index: 2147483647;
       transition: opacity 500ms ease-out;
@@ -98,12 +108,12 @@
   }
 
   /**
-   * 全 Angular コンポーネントをハイライト
+   * 全 Angular コンポーネントをハイライト（Zone.js トリガー → 緑）
    */
   function highlightAllComponents() {
     if (!enabled) return;
     const components = findAngularComponents();
-    components.forEach(highlightElement);
+    components.forEach((el) => highlightElement(el, 'zone'));
   }
 
   /**
@@ -169,18 +179,17 @@
       if (!enabled) return;
 
       for (const mutation of mutations) {
+        const target = mutation.target;
+
         // ハイライト用のオーバーレイ自体の変更は無視
-        if (
-          mutation.target.style &&
-          mutation.target.style.zIndex === '2147483647'
-        ) {
+        const targetEl = target.nodeType === Node.ELEMENT_NODE
+          ? target
+          : target.parentElement;
+        if (!targetEl || targetEl.hasAttribute('data-ng-hl') || targetEl.closest('[data-ng-hl]')) {
           continue;
         }
 
-        const target = mutation.target;
-        const component = findClosestComponent(
-          target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement
-        );
+        const component = findClosestComponent(targetEl);
         if (component) {
           changedElements.add(component);
         }
@@ -194,7 +203,7 @@
         });
       }
 
-      // デバウンスして一括ハイライト
+      // デバウンスして一括ハイライト（50msで十分なバッチングを確保）
       if (changedElements.size > 0) {
         clearTimeout(mutationTimer);
         mutationTimer = setTimeout(() => {
@@ -202,17 +211,21 @@
             changedElements.clear();
             return;
           }
-          changedElements.forEach(highlightElement);
+          changedElements.forEach((el) => highlightElement(el, 'signal'));
           changedElements.clear();
-        }, 16); // ~1フレーム
+        }, 50);
       }
     });
 
+    // Signals は childList だけでなく attributes / characterData も変更する
+    // （テキスト補間・属性バインディング・クラスバインディングなど）
+    // Zone.js がない時だけここに来るのでパフォーマンス問題はない
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: false,  // 属性変更は対象外（頻度が高すぎる）
-      characterData: false, // テキスト変更も対象外
+      attributes: true,
+      attributeFilter: undefined, // 全属性を対象
+      characterData: true,
     });
 
     return observer;
