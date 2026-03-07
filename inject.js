@@ -166,7 +166,7 @@
   // ---- Phase 2: MutationObserver (Angular Signals / Zoneless Angular 対応) ----
   // Zone.js がある場合は MutationObserver を無効化（Zone.js フックで十分）
 
-  function setupMutationObserver() {
+  function setupMutationObserver(isZoneless) {
     let mutationTimer = null;
     const changedElements = new Set();
 
@@ -226,15 +226,13 @@
       }
     });
 
-    // Signals は childList だけでなく attributes / characterData も変更する
-    // （テキスト補間・属性バインディング・クラスバインディングなど）
-    // Zone.js がない時だけここに来るのでパフォーマンス問題はない
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: undefined, // 全属性を対象
-      characterData: true,
+      // characterData は頻度が高いので Zoneless の時だけ有効
+      // Zone.js ありの場合は childList + attributes で Signal の主要な変化をカバー
+      characterData: isZoneless,
     });
 
     return observer;
@@ -245,12 +243,15 @@
   function init() {
     const zonePatched = patchZoneJs();
 
-    // Zone.js がない場合（Zoneless / Signals）のみ MutationObserver を使う
-    if (!zonePatched) {
-      setupMutationObserver();
-      console.debug('[Angular Highlight] Zone.js なし - MutationObserver のみ');
+    // Zone.js の有無に関わらず MutationObserver を有効化
+    // Zone.js あり → Signals の DOM 変化（青）を検知するため
+    // Zone.js なし → Zoneless / Signals のみ（青）
+    setupMutationObserver(!zonePatched);
+
+    if (zonePatched) {
+      console.debug('[Angular Highlight] Zone.js フック有効 + MutationObserver (Signals対応)');
     } else {
-      console.debug('[Angular Highlight] Zone.js フック有効');
+      console.debug('[Angular Highlight] Zone.js なし - MutationObserver のみ');
     }
   }
 
