@@ -43,12 +43,9 @@
               components.push(node);
             }
           } else {
-            // prod mode フォールバック: __ngContext__ がオブジェクト or 配列（LView）かを確認
-            // 単純な数値や文字列は内部参照なのでスキップ
-            const ctx = node.__ngContext__;
-            if (Array.isArray(ctx) || (ctx && typeof ctx === 'object')) {
-              components.push(node);
-            }
+            // prod mode フォールバック: __ngContext__ の存在のみで判定
+            // Fix 1 の Zone 外実行 + Fix 3 の MAX_OVERLAYS で過検出は防ぐ
+            components.push(node);
           }
         } catch {
           // エラーの場合はスキップ（誤検出しない）
