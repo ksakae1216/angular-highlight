@@ -43,12 +43,15 @@
               components.push(node);
             }
           } else {
-            // prod mode フォールバック: __ngContext__ の存在のみで判定
-            components.push(node);
+            // prod mode フォールバック: __ngContext__ がオブジェクト or 配列（LView）かを確認
+            // 単純な数値や文字列は内部参照なのでスキップ
+            const ctx = node.__ngContext__;
+            if (Array.isArray(ctx) || (ctx && typeof ctx === 'object')) {
+              components.push(node);
+            }
           }
         } catch {
-          // エラーは無視（一部の内部要素でエラーが出る場合がある）
-          components.push(node);
+          // エラーの場合はスキップ（誤検出しない）
         }
       }
     }
@@ -60,6 +63,20 @@
     zone:   '#00c864',
     signal: '#3296ff',
   };
+
+  // 同時表示オーバーレイ数の上限（パフォーマンス保護）
+  const MAX_OVERLAYS = 50;
+  let activeOverlayCount = 0;
+
+  // Zone 外で関数を実行するヘルパー（無限ループ防止）
+  // 遅延評価で Zone.js がロード済みの時点で正しく取得する
+  function runOutsideZone(fn) {
+    if (typeof Zone !== 'undefined' && Zone.root) {
+      Zone.root.run(fn);
+    } else {
+      fn();
+    }
+  }
 
   function hexToRgba(hex, alpha) {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -74,6 +91,9 @@
    * @param {'zone'|'signal'} colorKey
    */
   function highlightElement(el, colorKey = 'zone') {
+    // オーバーレイ数が上限に達したらスキップ（パフォーマンス保護）
+    if (activeOverlayCount >= MAX_OVERLAYS) return;
+
     const rect = el.getBoundingClientRect();
 
     // 画面外や非表示の要素はスキップ
@@ -102,18 +122,23 @@
     `;
 
     document.documentElement.appendChild(overlay);
+    activeOverlayCount++;
 
-    // 2フレーム後にフェードアウト開始
-    requestAnimationFrame(() => {
+    // Zone 外で cleanup を実行（Angular Zone の runTask フックをトリガーさせない → 無限ループ防止）
+    runOutsideZone(() => {
+      // 2フレーム後にフェードアウト開始
       requestAnimationFrame(() => {
-        overlay.style.opacity = '0';
+        requestAnimationFrame(() => {
+          overlay.style.opacity = '0';
+        });
       });
-    });
 
-    // 500ms後に削除
-    setTimeout(() => {
-      overlay.remove();
-    }, 520);
+      // 500ms後に削除
+      setTimeout(() => {
+        overlay.remove();
+        activeOverlayCount--;
+      }, 520);
+    });
   }
 
   /**
@@ -213,16 +238,19 @@
       }
 
       // デバウンスして一括ハイライト（50msで十分なバッチングを確保）
+      // Zone 外で setTimeout を実行して Angular Zone の runTask フックを避ける
       if (changedElements.size > 0) {
         clearTimeout(mutationTimer);
-        mutationTimer = setTimeout(() => {
-          if (!enabled) {
+        runOutsideZone(() => {
+          mutationTimer = setTimeout(() => {
+            if (!enabled) {
+              changedElements.clear();
+              return;
+            }
+            changedElements.forEach((el) => highlightElement(el, 'signal'));
             changedElements.clear();
-            return;
-          }
-          changedElements.forEach((el) => highlightElement(el, 'signal'));
-          changedElements.clear();
-        }, 50);
+          }, 50);
+        });
       }
     });
 
