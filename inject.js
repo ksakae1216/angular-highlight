@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  let enabled = true;
+  let enabled = false; // content.js から初期状態を受け取るまで無効
   let highlightScheduled = false;
   let lastHighlightTime = 0;
   const HIGHLIGHT_THROTTLE_MS = 150; // 最低150ms間隔でハイライト

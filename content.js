@@ -6,23 +6,30 @@
 
   const DEFAULT_COLORS = { zone: '#00c864', signal: '#3296ff' };
 
-  // inject.js をページコンテキストに script タグで注入
-  const script = document.createElement('script');
-  script.src = chrome.runtime.getURL('inject.js');
-  script.type = 'text/javascript';
-  (document.head || document.documentElement).appendChild(script);
-  script.remove();
+  // inject.js のロード完了後に初期状態を送信（race condition 防止）
+  function injectScript(callback) {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('inject.js');
+    script.type = 'text/javascript';
+    script.onload = () => {
+      script.remove();
+      callback();
+    };
+    (document.head || document.documentElement).appendChild(script);
+  }
 
-  // storage から現在の状態を読み込んで inject.js に伝える
-  chrome.storage.local.get({ enabled: true, colors: DEFAULT_COLORS }, (result) => {
-    window.postMessage(
-      { type: 'ANGULAR_HIGHLIGHT_SET_ENABLED', enabled: result.enabled },
-      '*'
-    );
-    window.postMessage(
-      { type: 'ANGULAR_HIGHLIGHT_SET_COLORS', colors: result.colors },
-      '*'
-    );
+  // inject.js のロードを待ってから storage の状態を送信
+  injectScript(() => {
+    chrome.storage.local.get({ enabled: true, colors: DEFAULT_COLORS }, (result) => {
+      window.postMessage(
+        { type: 'ANGULAR_HIGHLIGHT_SET_ENABLED', enabled: result.enabled },
+        '*'
+      );
+      window.postMessage(
+        { type: 'ANGULAR_HIGHLIGHT_SET_COLORS', colors: result.colors },
+        '*'
+      );
+    });
   });
 
   // ストレージの変更を監視してリアルタイムで反映
