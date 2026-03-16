@@ -27,7 +27,7 @@ Angular Ivy (v9+) marks every component host element with `__ngContext__`, which
 
 ### From Chrome Web Store
 
-> Coming soon
+[Angular Highlight - Chrome Web Store](https://chromewebstore.google.com/detail/angular-highlight/infobgaghdedlmbmedgmknemgkeomojp?hl=ja)
 
 ### Load unpacked (for development)
 
