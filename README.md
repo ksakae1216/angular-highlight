@@ -6,6 +6,8 @@
 
 A Chrome extension that highlights Angular components when change detection runs — just like React DevTools' "Highlight updates when components render".
 
+![Angular Highlight Demo](./demo.gif)
+
 ## Features
 
 - **Real-time visualization** — Components flash green whenever Angular's change detection runs
