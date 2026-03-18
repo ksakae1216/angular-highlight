@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Angular Highlight",
+  "name": "__MSG_appName__",
   "version": "1.0.1",
-  "description": "Highlights Angular components when change detection runs - like React DevTools",
+  "description": "__MSG_appDesc__",
+  "default_locale": "en",
   "permissions": [
     "storage"
   ],

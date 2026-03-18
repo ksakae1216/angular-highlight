@@ -3,6 +3,11 @@
 (function () {
   'use strict';
 
+  // i18n: data-i18n 属性を持つ要素にテキストを適用
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = chrome.i18n.getMessage(el.dataset.i18n);
+  });
+
   const DEFAULT_COLORS = {
     zone:   '#00c864',
     signal: '#3296ff',
@@ -20,10 +25,10 @@
 
   function updateStatus(enabled) {
     if (enabled) {
-      status.textContent = '有効 - コンポーネントを監視中';
+      status.textContent = chrome.i18n.getMessage('statusOn');
       status.className = 'status-badge on';
     } else {
-      status.textContent = '無効';
+      status.textContent = chrome.i18n.getMessage('statusOff');
       status.className = 'status-badge off';
     }
   }

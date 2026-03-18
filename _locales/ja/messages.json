@@ -1,0 +1,23 @@
+{
+  "appName": {
+    "message": "Angular Highlight"
+  },
+  "appDesc": {
+    "message": "Angularのコンポーネントが変更検知されたときにハイライト表示します"
+  },
+  "toggleLabel": {
+    "message": "ハイライト表示"
+  },
+  "toggleSub": {
+    "message": "CD 発生時にコンポーネントを光らせる"
+  },
+  "statusOn": {
+    "message": "有効 - コンポーネントを監視中"
+  },
+  "statusOff": {
+    "message": "無効"
+  },
+  "resetBtn": {
+    "message": "デフォルトに戻す"
+  }
+}

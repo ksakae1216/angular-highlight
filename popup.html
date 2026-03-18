@@ -275,8 +275,8 @@
   <div class="content">
     <div class="toggle-row">
       <div class="toggle-label">
-        <span class="toggle-label-main">ハイライト表示</span>
-        <span class="toggle-label-sub">CD 発生時にコンポーネントを光らせる</span>
+        <span class="toggle-label-main" data-i18n="toggleLabel"></span>
+        <span class="toggle-label-sub" data-i18n="toggleSub"></span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="toggle" checked>
@@ -284,7 +284,7 @@
       </label>
     </div>
 
-    <div class="status-badge on" id="status">有効 - コンポーネントを監視中</div>
+    <div class="status-badge on" id="status"></div>
 
     <div class="color-section">
       <div class="color-row">
@@ -308,7 +308,7 @@
         </div>
       </div>
     </div>
-    <button class="reset-btn" id="reset-btn">デフォルトに戻す</button>
+    <button class="reset-btn" id="reset-btn" data-i18n="resetBtn"></button>
   </div>
 
   <script src="popup.js"></script>
