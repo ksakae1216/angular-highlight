@@ -1,0 +1,23 @@
+{
+  "appName": {
+    "message": "Angular Highlight"
+  },
+  "appDesc": {
+    "message": "Highlights Angular components when change detection runs - like React DevTools"
+  },
+  "toggleLabel": {
+    "message": "Highlight"
+  },
+  "toggleSub": {
+    "message": "Flash components on change detection"
+  },
+  "statusOn": {
+    "message": "Active - Watching components"
+  },
+  "statusOff": {
+    "message": "Inactive"
+  },
+  "resetBtn": {
+    "message": "Reset to default"
+  }
+}
