@@ -261,6 +261,61 @@
       color: #ccc;
       border-color: #444;
     }
+
+    .jev-section {
+      margin-top: 12px;
+      background: #16213e;
+      border-radius: 10px;
+      border: 1px solid #0f3460;
+      padding: 12px 16px;
+    }
+
+    .jev-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .jev-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #ccc;
+    }
+
+    .jev-badge-beta {
+      font-size: 9px;
+      color: #888;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 1px 6px;
+      margin-left: 6px;
+    }
+
+    .jev-body {
+      margin-top: 10px;
+    }
+
+    .jev-key-input {
+      width: 100%;
+      background: #0f3460;
+      border: 1px solid #1a4a7a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 11px;
+      padding: 6px 8px;
+      font-family: monospace;
+    }
+
+    .jev-hint {
+      font-size: 10px;
+      color: #888;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .jev-hint a {
+      color: #4a9eff;
+    }
   </style>
 </head>
 <body>
@@ -309,6 +364,28 @@
       </div>
     </div>
     <button class="reset-btn" id="reset-btn" data-i18n="resetBtn"></button>
+
+    <div class="jev-section">
+      <div class="jev-header">
+        <div class="jev-title">AI診断 (Jev)<span class="jev-badge-beta">BETA</span></div>
+        <label class="toggle-switch" style="width: 36px; height: 20px;">
+          <input type="checkbox" id="jev-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="jev-body">
+        <input
+          type="password"
+          class="jev-key-input"
+          id="jev-api-key"
+          placeholder="TypeSafe API Key"
+          autocomplete="off"
+        >
+        <div class="jev-hint">
+          過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。APIキーはこの端末のローカルにのみ保存され、外部には送信されません。<a href="https://console.typesafe.ai" target="_blank">console.typesafe.ai</a>で取得できます。
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>

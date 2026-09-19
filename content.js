@@ -20,16 +20,23 @@
 
   // inject.js のロードを待ってから storage の状態を送信
   injectScript(() => {
-    chrome.storage.local.get({ enabled: true, colors: DEFAULT_COLORS }, (result) => {
-      window.postMessage(
-        { type: 'ANGULAR_HIGHLIGHT_SET_ENABLED', enabled: result.enabled },
-        '*'
-      );
-      window.postMessage(
-        { type: 'ANGULAR_HIGHLIGHT_SET_COLORS', colors: result.colors },
-        '*'
-      );
-    });
+    chrome.storage.local.get(
+      { enabled: true, colors: DEFAULT_COLORS, jevEnabled: false },
+      (result) => {
+        window.postMessage(
+          { type: 'ANGULAR_HIGHLIGHT_SET_ENABLED', enabled: result.enabled },
+          '*'
+        );
+        window.postMessage(
+          { type: 'ANGULAR_HIGHLIGHT_SET_COLORS', colors: result.colors },
+          '*'
+        );
+        window.postMessage(
+          { type: 'ANGULAR_HIGHLIGHT_JEV_SET_ENABLED', enabled: result.jevEnabled },
+          '*'
+        );
+      }
+    );
   });
 
   // ストレージの変更を監視してリアルタイムで反映
@@ -47,5 +54,33 @@
         '*'
       );
     }
+    if (changes.jevEnabled !== undefined) {
+      window.postMessage(
+        { type: 'ANGULAR_HIGHLIGHT_JEV_SET_ENABLED', enabled: changes.jevEnabled.newValue },
+        '*'
+      );
+    }
+  });
+
+  // inject.js からの Jev 分析リクエストを background.js に中継する
+  // （inject.js はページ本体のコンテキストで動くため chrome.* API を直接呼べない）
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data) return;
+    if (event.data.type !== 'ANGULAR_HIGHLIGHT_JEV_REQUEST') return;
+
+    const { requestId, state } = event.data;
+    chrome.runtime.sendMessage({ type: 'JEV_ANALYZE', state }, (response) => {
+      // 拡張のリロード直後などで sendMessage が失敗することがあるためチェック
+      if (chrome.runtime.lastError) return;
+      window.postMessage(
+        {
+          type: 'ANGULAR_HIGHLIGHT_JEV_RESPONSE',
+          requestId,
+          result: response && response.result,
+          error: response && response.error,
+        },
+        '*'
+      );
+    });
   });
 })();

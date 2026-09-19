@@ -13,15 +13,17 @@
     signal: '#3296ff',
   };
 
-  const toggle     = document.getElementById('toggle');
-  const status     = document.getElementById('status');
-  const colorZone  = document.getElementById('color-zone');
-  const colorSig   = document.getElementById('color-signal');
-  const hexZone    = document.getElementById('hex-zone');
-  const hexSig     = document.getElementById('hex-signal');
-  const dotZone    = document.getElementById('dot-zone');
-  const dotSig     = document.getElementById('dot-signal');
-  const resetBtn   = document.getElementById('reset-btn');
+  const toggle      = document.getElementById('toggle');
+  const status      = document.getElementById('status');
+  const colorZone   = document.getElementById('color-zone');
+  const colorSig    = document.getElementById('color-signal');
+  const hexZone     = document.getElementById('hex-zone');
+  const hexSig      = document.getElementById('hex-signal');
+  const dotZone     = document.getElementById('dot-zone');
+  const dotSig      = document.getElementById('dot-signal');
+  const resetBtn    = document.getElementById('reset-btn');
+  const jevToggle   = document.getElementById('jev-toggle');
+  const jevApiKey   = document.getElementById('jev-api-key');
 
   function updateStatus(enabled) {
     if (enabled) {
@@ -73,5 +75,25 @@
   resetBtn.addEventListener('click', () => {
     applyColors(DEFAULT_COLORS);
     chrome.storage.local.set({ colors: DEFAULT_COLORS });
+  });
+
+  // ---- Jev (TypeSafe AI) 設定 ----
+
+  chrome.storage.local.get({ jevEnabled: false, jevApiKey: '' }, (result) => {
+    jevToggle.checked = result.jevEnabled;
+    jevApiKey.value = result.jevApiKey;
+  });
+
+  jevToggle.addEventListener('change', () => {
+    chrome.storage.local.set({ jevEnabled: jevToggle.checked });
+  });
+
+  // 入力のたびに毎回書き込むと負荷が高いので、入力が止まってから保存する
+  let jevKeySaveTimer = null;
+  jevApiKey.addEventListener('input', () => {
+    clearTimeout(jevKeySaveTimer);
+    jevKeySaveTimer = setTimeout(() => {
+      chrome.storage.local.set({ jevApiKey: jevApiKey.value.trim() });
+    }, 400);
   });
 })();

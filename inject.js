@@ -144,8 +144,180 @@
   function highlightAllComponents() {
     if (!enabled) return;
     const components = findAngularComponents();
-    components.forEach((el) => highlightElement(el, 'zone'));
+    components.forEach((el) => {
+      highlightElement(el, 'zone');
+      recordRender(el, 'zone');
+    });
   }
+
+  // ---- Jev (TypeSafe AI) 連携: 過剰な再レンダリングの検知 ----
+  // 注意: Zone.js 経路では「変更検知サイクルが走った」ことしか分からず、
+  // 実際にDOMが更新されたかまでは判定していない（近似値として扱う）。
+
+  let jevAnalysisEnabled = false; // content.js から設定を受け取るまで無効
+
+  const ANALYSIS_WINDOW_MS = 2000; // この時間内の再レンダリング回数を見る
+  const RENDER_THRESHOLD = 10;      // この回数を超えたら分析対象にする
+  const ANALYSIS_COOLDOWN_MS = 5000; // 同じコンポーネントへの連続リクエストを防ぐ
+
+  const renderStats = new Map(); // Element -> { name, onPush, timestamps: number[] }
+  const onCooldown = new WeakSet();
+  const pendingJevRequests = new Map(); // requestId -> Element
+  let jevRequestSeq = 0;
+
+  /**
+   * ng.getComponent が使える場合にコンポーネント名を取得
+   */
+  function getComponentName(el) {
+    try {
+      if (window.ng && window.ng.getComponent) {
+        const comp = window.ng.getComponent(el);
+        if (comp && comp.constructor && comp.constructor.name) {
+          return comp.constructor.name;
+        }
+      }
+    } catch {
+      // 取得できない場合はタグ名にフォールバック
+    }
+    return el.tagName ? el.tagName.toLowerCase() : 'unknown';
+  }
+
+  /**
+   * OnPush戦略かどうかを Ivy のコンポーネント定義から推測する
+   * 取得できない場合は null（unknown）を返す
+   */
+  function getOnPushInfo(el) {
+    try {
+      if (window.ng && window.ng.getComponent) {
+        const comp = window.ng.getComponent(el);
+        const def = comp && comp.constructor && comp.constructor.ɵcmp;
+        if (def && typeof def.onPush === 'boolean') {
+          return def.onPush;
+        }
+      }
+    } catch {
+      // 取得できない場合は unknown 扱い
+    }
+    return null;
+  }
+
+  /**
+   * 最も近い親の Angular コンポーネントホストを探す（バッジの原因推定に使う）
+   * 注: setupMutationObserver内にも同名・同趣旨のローカル関数があるが、スコープが分かれているため衝突はしない
+   */
+  function findClosestComponentForJev(el, skipSelf) {
+    let current = skipSelf ? el.parentElement : el;
+    while (current && current !== document.documentElement) {
+      if (current.__ngContext__ !== undefined) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  /**
+   * 再レンダリングを記録し、閾値を超えたら Jev に分析をリクエストする
+   */
+  function recordRender(el, colorKey) {
+    if (!jevAnalysisEnabled) return;
+
+    const now = Date.now();
+    let stat = renderStats.get(el);
+    if (!stat) {
+      stat = { name: getComponentName(el), onPush: getOnPushInfo(el), timestamps: [] };
+      renderStats.set(el, stat);
+    }
+    stat.timestamps.push(now);
+    stat.timestamps = stat.timestamps.filter((t) => now - t <= ANALYSIS_WINDOW_MS);
+
+    if (stat.timestamps.length >= RENDER_THRESHOLD && !onCooldown.has(el)) {
+      onCooldown.add(el);
+      setTimeout(() => onCooldown.delete(el), ANALYSIS_COOLDOWN_MS);
+      requestJevAnalysis(el, stat, colorKey);
+    }
+  }
+
+  /**
+   * content.js 経由で Jev API に判定をリクエストする
+   */
+  function requestJevAnalysis(el, stat, colorKey) {
+    const parentEl = findClosestComponentForJev(el, true);
+
+    const state = {
+      component: stat.name,
+      changeDetectionStrategy:
+        stat.onPush === true ? 'OnPush' : stat.onPush === false ? 'Default' : 'unknown',
+      renderCount: stat.timestamps.length,
+      windowSeconds: ANALYSIS_WINDOW_MS / 1000,
+      detectionPath: colorKey, // 'zone' or 'signal'
+      parentComponent: parentEl ? getComponentName(parentEl) : null,
+    };
+
+    const requestId = `jev_req_${++jevRequestSeq}`;
+    pendingJevRequests.set(requestId, el);
+
+    window.postMessage({ type: 'ANGULAR_HIGHLIGHT_JEV_REQUEST', requestId, state }, '*');
+  }
+
+  /**
+   * Jev の判定結果をコンポーネントの上にバッジ表示する
+   */
+  function showJevBadge(el, answers) {
+    if (!answers) return;
+
+    const excessive = answers.excessive_rerender;
+    const cause = answers.likely_cause;
+    const priority = answers.optimization_priority;
+    if (!excessive || excessive.noul < 0.5) return; // 過剰でないと判定されたら何もしない
+
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const pct = Math.round(excessive.noul * 100);
+    const causeLabel = cause ? cause.choice : 'unclear';
+    const priorityLabel = priority ? priority.score : null;
+
+    const badge = document.createElement('div');
+    badge.setAttribute('data-ng-hl-jev', '');
+    badge.textContent = `⚠ ${pct}% 過剰レンダリングの疑い (${causeLabel})${
+      priorityLabel !== null ? ` [優先度: ${priorityLabel.toFixed(1)}]` : ''
+    }`;
+    badge.style.cssText = `
+      position: fixed;
+      top: ${Math.max(rect.top - 22, 0)}px;
+      left: ${rect.left}px;
+      background: rgba(220, 50, 50, 0.9);
+      color: white;
+      font: 11px/1.4 -apple-system, sans-serif;
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 2147483647;
+      white-space: nowrap;
+    `;
+
+    document.documentElement.appendChild(badge);
+    runOutsideZone(() => {
+      setTimeout(() => badge.remove(), 4000);
+    });
+  }
+
+  // Jev の設定・判定結果を content.js から受け取る
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data) return;
+    if (event.data.type === 'ANGULAR_HIGHLIGHT_JEV_SET_ENABLED') {
+      jevAnalysisEnabled = event.data.enabled;
+    }
+    if (event.data.type === 'ANGULAR_HIGHLIGHT_JEV_RESPONSE') {
+      const { requestId, result } = event.data;
+      const el = pendingJevRequests.get(requestId);
+      pendingJevRequests.delete(requestId);
+      if (el && result) {
+        showJevBadge(el, result);
+      }
+    }
+  });
 
   /**
    * ハイライトをスケジュール（重複実行 & スロットルで制限）
@@ -244,7 +416,10 @@
               changedElements.clear();
               return;
             }
-            changedElements.forEach((el) => highlightElement(el, 'signal'));
+            changedElements.forEach((el) => {
+              highlightElement(el, 'signal');
+              recordRender(el, 'signal');
+            });
             changedElements.clear();
           }, 50);
         });
