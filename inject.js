@@ -159,7 +159,7 @@
   const ANALYSIS_WINDOW_MS = 2000; // この時間内の再レンダリング回数を見る
   // この回数以上になったら分析対象にする（popup から変更可能）
   // 10 は経験的な目安で、統計的な根拠はない。Zone.js 経路は150ms間隔のスロットルがあるため
-  // 2秒間に最大でも約13回しか記録されない（popup の入力上限を13にしているのはこのため）
+  // Zone.js 経路は150msに1回しか記録しないため、大きい値では判定されにくい（popup の入力上限は目安として13）
   let renderThreshold = 10;
 
   const renderStats = new WeakMap(); // Element -> { name, onPush, timestamps: number[] }
