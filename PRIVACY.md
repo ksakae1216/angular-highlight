@@ -32,15 +32,15 @@ When AI diagnosis is ON and a component re-renders many times in a short period 
 
 **Information sent in the request:**
 
-- The component's name (or its HTML tag name)
-- Its change detection strategy (`OnPush`, `Default`, or `unknown`)
+- The change detection strategy of the component (`OnPush`, `Default`, or `unknown`)
 - The number of re-renders within the measurement window and the window length
 - The detection method (Zone.js or Signals / Zoneless)
-- The name of its parent component
+- Whether the component has a parent component (yes / no)
 - Your TypeSafe API key, as an authentication header
 
 **Information never sent:**
 
+- The names of your components or classes
 - Page content (text, images, form input, or any other DOM content)
 - The URL or title of the page
 - Your browsing history
@@ -105,15 +105,15 @@ AI診断がONで、あるコンポーネントが短時間に何度も再レン�
 
 **リクエストで送信する情報:**
 
-- コンポーネント名（取得できない場合はHTMLのタグ名）
-- 変更検知戦略（`OnPush`、`Default`、または `unknown`）
+- コンポーネントの変更検知戦略（`OnPush`、`Default`、または `unknown`）
 - 計測時間内の再レンダリング回数と、計測時間の長さ
 - 検知方式（Zone.js または Signals / Zoneless）
-- 親コンポーネントの名前
+- 親コンポーネントがあるかどうか（あり / なし）
 - 認証ヘッダーとしての、ご自身の TypeSafe APIキー
 
 **送信しない情報:**
 
+- コンポーネントやクラスの名前
 - ページの内容（テキスト、画像、フォームの入力内容など、DOM上のあらゆる内容）
 - ページのURLやタイトル
 - 閲覧履歴
