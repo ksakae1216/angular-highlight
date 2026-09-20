@@ -162,7 +162,7 @@
   // Zone.js 経路は150msに1回しか記録しないため、大きい値では判定されにくい（popup の入力上限は目安として13）
   let renderThreshold = 10;
 
-  const renderStats = new WeakMap(); // Element -> { name, onPush, timestamps: number[] }
+  const renderStats = new WeakMap(); // Element -> { onPush, timestamps: number[] }
   // 一度Jevに判定をリクエストしたコンポーネント（ページをリロードするまで再判定しない）
   const analyzed = new WeakSet();
   const pendingJevRequests = new Map(); // requestId -> Element
@@ -228,7 +228,7 @@
     const now = Date.now();
     let stat = renderStats.get(el);
     if (!stat) {
-      stat = { name: getComponentName(el), onPush: getOnPushInfo(el), timestamps: [] };
+      stat = { onPush: getOnPushInfo(el), timestamps: [] };
       renderStats.set(el, stat);
     }
     stat.timestamps.push(now);
@@ -246,14 +246,15 @@
   function requestJevAnalysis(el, stat, colorKey) {
     const parentEl = findClosestComponentForJev(el, true);
 
+    // コンポーネント名・親の名前は送らない（アプリの内部情報を外に出さないため）。
+    // 判定に必要な「親がいるか」だけを送る
     const state = {
-      component: stat.name,
       changeDetectionStrategy:
         stat.onPush === true ? 'OnPush' : stat.onPush === false ? 'Default' : 'unknown',
       renderCount: stat.timestamps.length,
       windowSeconds: ANALYSIS_WINDOW_MS / 1000,
       detectionPath: colorKey, // 'zone' or 'signal'
-      parentComponent: parentEl ? getComponentName(parentEl) : null,
+      hasParentComponent: parentEl !== null,
     };
 
     const requestId = `jev_req_${++jevRequestSeq}`;

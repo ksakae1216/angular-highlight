@@ -33,7 +33,7 @@ When a component re-renders many times in a short period, the extension can ask 
 • Each component is diagnosed only once per page load, so the same component never triggers repeated (billable) API requests
 • Cause: OnPush not used / re-rendered along with its parent / functions or objects recreated on every render / undetermined
 • Priority: Low / Medium / High
-• Data sent to the Jev API (only while enabled): component name, change detection strategy (OnPush or Default), re-render count, detection method, and parent component name. Page content, URLs, and user input are never sent
+• Data sent to the Jev API (only while enabled): change detection strategy (OnPush or Default), re-render count, detection method, and whether the component has a parent. Component names, page content, URLs, and user input are never sent
 • Your API key is stored locally in chrome.storage.local and is used only by the extension's background service worker; it is never exposed to the page
 
 **Technical details**
@@ -88,7 +88,7 @@ Angular Highlight は、どのコンポーネントがいつ再レンダリン�
 • 同じコンポーネントはページを読み込み直すまで1回しか判定しないため、同じコンポーネントで課金対象のAPIリクエストが繰り返されることはありません
 • 原因: OnPush未使用 / 親コンポーネントの再描画の巻き込み / 関数・オブジェクトが毎回作り直されている / 特定できず
 • 優先度: 低 / 中 / 高
-• Jev APIに送信する情報（ONの間のみ）: コンポーネント名、変更検知戦略（OnPush or Default）、再レンダリング回数、検知方式、親コンポーネント名。ページの内容・URL・ユーザー入力は送信しません
+• Jev APIに送信する情報（ONの間のみ）: 変更検知戦略（OnPush or Default）、再レンダリング回数、検知方式、親コンポーネントの有無。コンポーネント名・ページの内容・URL・ユーザー入力は送信しません
 • APIキーは chrome.storage.local にローカル保存され、拡張のバックグラウンド（Service Worker）だけが使用します。ページ側には渡されません
 
 **プライバシー**
