@@ -53,6 +53,7 @@ When a component re-renders many times in a short period, the extension can ask 
 - Sent to the Jev API (only while enabled): component name, change detection strategy (OnPush / Default), re-render count, detection method, and parent component name. **Page content, URLs, and user input are never sent.**
 - Your API key is stored in `chrome.storage.local` and used only by the extension's background service worker (`background.js`). It is never exposed to the page (`inject.js`).
 - The only host the extension talks to is `https://api.typesafe.ai/*`.
+- See the full [Privacy Policy](./PRIVACY.md).
 
 ### Setup
 
