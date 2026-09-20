@@ -42,6 +42,9 @@ When a component re-renders many times in a short period, the extension can ask 
 • Throttled to 150ms to minimize performance impact on the page
 • No data collection by default — all state is stored locally via chrome.storage.local. The only network request the extension can make is the optional AI diagnosis described above
 
+## Privacy policy URL
+https://github.com/ksakae1216/angular-highlight/blob/main/PRIVACY.md
+
 ## Category
 Developer Tools
 
