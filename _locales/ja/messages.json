@@ -33,7 +33,7 @@
     "message": "2秒間にN回再描画で診断"
   },
   "jevThresholdNote": {
-    "message": "上限13回: Zone.jsのアプリは2秒間に最大約13回までしか記録されません。"
+    "message": "上限は13回です。Zone.jsの検知は150msに1回しか記録しないため、これより大きい値では判定されにくくなります。"
   },
   "jevGetKey": {
     "message": "APIキーの取得:"

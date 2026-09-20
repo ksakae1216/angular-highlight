@@ -44,7 +44,7 @@ When a component re-renders many times in a short period, the extension can ask 
 
 - A component is diagnosed when it re-renders **N times within 2 seconds**. N defaults to **10** and can be changed in the popup (3–13).
 - **The default of 10 is a rule of thumb, not a statistically derived value.** Lower it to be more sensitive, raise it to reduce noise.
-- **The maximum is 13** because Zone.js-based detection is throttled to 150ms, so at most ~13 re-renders are recorded per 2 seconds. A higher value would never trigger for Zone.js apps. Signals / Zoneless detection uses a 50ms debounce.
+- **The maximum is 13 (a rule of thumb).** Zone.js-based detection records at most once per 150ms, so higher values are less likely to trigger.
 - **Each component is diagnosed once per page load.** Reload the page to diagnose it again. This keeps the number of (billable) API requests small.
 - Zone.js detection only knows that a change detection cycle ran, not that the DOM actually changed, so the re-render count is an approximation.
 

@@ -33,7 +33,7 @@
     "message": "Diagnose at N re-renders in 2 sec"
   },
   "jevThresholdNote": {
-    "message": "Max 13: apps using Zone.js record at most ~13 re-renders per 2 sec."
+    "message": "Up to 13. Zone.js detection records at most once per 150 ms, so higher values are less likely to trigger."
   },
   "jevGetKey": {
     "message": "Get an API key at"
