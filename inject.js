@@ -158,10 +158,10 @@
 
   const ANALYSIS_WINDOW_MS = 2000; // この時間内の再レンダリング回数を見る
   const RENDER_THRESHOLD = 10;      // この回数を超えたら分析対象にする
-  const ANALYSIS_COOLDOWN_MS = 5000; // 同じコンポーネントへの連続リクエストを防ぐ
 
-  const renderStats = new Map(); // Element -> { name, onPush, timestamps: number[] }
-  const onCooldown = new WeakSet();
+  const renderStats = new WeakMap(); // Element -> { name, onPush, timestamps: number[] }
+  // 一度Jevに判定をリクエストしたコンポーネント（ページをリロードするまで再判定しない）
+  const analyzed = new WeakSet();
   const pendingJevRequests = new Map(); // requestId -> Element
   let jevRequestSeq = 0;
 
@@ -231,9 +231,8 @@
     stat.timestamps.push(now);
     stat.timestamps = stat.timestamps.filter((t) => now - t <= ANALYSIS_WINDOW_MS);
 
-    if (stat.timestamps.length >= RENDER_THRESHOLD && !onCooldown.has(el)) {
-      onCooldown.add(el);
-      setTimeout(() => onCooldown.delete(el), ANALYSIS_COOLDOWN_MS);
+    if (stat.timestamps.length >= RENDER_THRESHOLD && !analyzed.has(el)) {
+      analyzed.add(el);
       requestJevAnalysis(el, stat, colorKey);
     }
   }
@@ -260,6 +259,23 @@
     window.postMessage({ type: 'ANGULAR_HIGHLIGHT_JEV_REQUEST', requestId, state }, '*');
   }
 
+  // Jev の likely_cause の選択肢 → 表示用の日本語ラベル（background.js の criteria キーと対応）
+  const JEV_CAUSE_LABELS = {
+    missing_onpush: 'OnPush未使用（OnPushにすると減らせるかも）',
+    parent_propagation: '親コンポーネントの再描画の巻き込み',
+    event_handler_recreation: '関数・オブジェクトが毎回作り直されている',
+    unclear: '原因を特定できず',
+  };
+
+  /**
+   * 優先度スコア（criteria 3段階 → 0〜2 の期待値）を 低/中/高 に変換する
+   */
+  function toPriorityLabel(score) {
+    if (score < 2 / 3) return '低';
+    if (score < 4 / 3) return '中';
+    return '高';
+  }
+
   /**
    * Jev の判定結果をコンポーネントの上にバッジ表示する
    */
@@ -275,31 +291,40 @@
     if (rect.width === 0 || rect.height === 0) return;
 
     const pct = Math.round(excessive.noul * 100);
-    const causeLabel = cause ? cause.choice : 'unclear';
-    const priorityLabel = priority ? priority.score : null;
+    const causeText = cause && JEV_CAUSE_LABELS[cause.choice]
+      ? JEV_CAUSE_LABELS[cause.choice]
+      : JEV_CAUSE_LABELS.unclear;
 
+    const parts = [`⚠ ${pct}% 過剰レンダリングの疑い`, `原因: ${causeText}`];
+    if (priority && typeof priority.score === 'number') {
+      parts.push(`優先度: ${toPriorityLabel(priority.score)}`);
+    }
+
+    const name = getComponentName(el);
     const badge = document.createElement('div');
     badge.setAttribute('data-ng-hl-jev', '');
-    badge.textContent = `⚠ ${pct}% 過剰レンダリングの疑い (${causeLabel})${
-      priorityLabel !== null ? ` [優先度: ${priorityLabel.toFixed(1)}]` : ''
-    }`;
+    badge.title = `${name}（クリックで閉じる）`;
+    badge.textContent = parts.join(' / ');
+    // 判定は1コンポーネントにつき1回だけなので、クリックで閉じるまで残す
+    // スクロールに追従するよう、ページ座標の absolute で配置する
     badge.style.cssText = `
-      position: fixed;
-      top: ${Math.max(rect.top - 22, 0)}px;
-      left: ${rect.left}px;
+      position: absolute;
+      top: ${Math.max(rect.top + window.scrollY - 22, 0)}px;
+      left: ${rect.left + window.scrollX}px;
       background: rgba(220, 50, 50, 0.9);
       color: white;
       font: 11px/1.4 -apple-system, sans-serif;
       padding: 2px 6px;
       border-radius: 4px;
-      pointer-events: none;
+      cursor: pointer;
       z-index: 2147483647;
       white-space: nowrap;
     `;
 
     document.documentElement.appendChild(badge);
+    // Zone 外でリスナーを登録（Angular の変更検知を走らせない）
     runOutsideZone(() => {
-      setTimeout(() => badge.remove(), 4000);
+      badge.addEventListener('click', () => badge.remove());
     });
   }
 
