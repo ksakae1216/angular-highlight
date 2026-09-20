@@ -19,5 +19,56 @@
   },
   "resetBtn": {
     "message": "デフォルトに戻す"
+  },
+  "jevTitle": {
+    "message": "AI診断 (Jev)"
+  },
+  "jevApiKeyPlaceholder": {
+    "message": "TypeSafe APIキー"
+  },
+  "jevHint": {
+    "message": "過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、コンポーネント名・再レンダリング回数・変更検知の設定のみをJevのAPIに送信します(ページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。"
+  },
+  "jevThresholdLabel": {
+    "message": "2秒間にN回再描画で診断"
+  },
+  "jevThresholdNote": {
+    "message": "上限13回: Zone.jsのアプリは2秒間に最大約13回までしか記録されません。"
+  },
+  "jevGetKey": {
+    "message": "APIキーの取得:"
+  },
+  "jevBadgeSuspect": {
+    "message": "過剰レンダリングの疑い"
+  },
+  "jevBadgeCause": {
+    "message": "原因"
+  },
+  "jevBadgePriority": {
+    "message": "優先度"
+  },
+  "jevBadgeDismiss": {
+    "message": "クリックで閉じる"
+  },
+  "jevPriorityLow": {
+    "message": "低"
+  },
+  "jevPriorityMedium": {
+    "message": "中"
+  },
+  "jevPriorityHigh": {
+    "message": "高"
+  },
+  "jevCauseMissingOnpush": {
+    "message": "OnPush未使用（OnPushにすると減らせるかも）"
+  },
+  "jevCauseParentPropagation": {
+    "message": "親コンポーネントの再描画の巻き込み"
+  },
+  "jevCauseEventHandlerRecreation": {
+    "message": "関数・オブジェクトが毎回作り直されている"
+  },
+  "jevCauseUnclear": {
+    "message": "原因を特定できず"
   }
 }

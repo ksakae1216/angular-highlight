@@ -19,5 +19,56 @@
   },
   "resetBtn": {
     "message": "Reset to default"
+  },
+  "jevTitle": {
+    "message": "AI Diagnosis (Jev)"
+  },
+  "jevApiKeyPlaceholder": {
+    "message": "TypeSafe API Key"
+  },
+  "jevHint": {
+    "message": "Jev (TypeSafe AI) automatically detects excessive re-rendering. While enabled, only the component name, re-render count, and change detection strategy are sent to the Jev API (no page content). Your API key is stored locally on this device only."
+  },
+  "jevThresholdLabel": {
+    "message": "Diagnose at N re-renders in 2 sec"
+  },
+  "jevThresholdNote": {
+    "message": "Max 13: apps using Zone.js record at most ~13 re-renders per 2 sec."
+  },
+  "jevGetKey": {
+    "message": "Get an API key at"
+  },
+  "jevBadgeSuspect": {
+    "message": "Possible excessive re-rendering"
+  },
+  "jevBadgeCause": {
+    "message": "Cause"
+  },
+  "jevBadgePriority": {
+    "message": "Priority"
+  },
+  "jevBadgeDismiss": {
+    "message": "Click to dismiss"
+  },
+  "jevPriorityLow": {
+    "message": "Low"
+  },
+  "jevPriorityMedium": {
+    "message": "Medium"
+  },
+  "jevPriorityHigh": {
+    "message": "High"
+  },
+  "jevCauseMissingOnpush": {
+    "message": "OnPush not used (try OnPush)"
+  },
+  "jevCauseParentPropagation": {
+    "message": "Re-rendered along with its parent component"
+  },
+  "jevCauseEventHandlerRecreation": {
+    "message": "Functions or objects are recreated on every render"
+  },
+  "jevCauseUnclear": {
+    "message": "Cause could not be determined"
   }
 }

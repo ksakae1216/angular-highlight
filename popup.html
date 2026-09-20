@@ -291,8 +291,46 @@
       margin-left: 6px;
     }
 
+    /* 小さいトグル（Jev用）: つまみのサイズと移動距離を枠に合わせる */
+    .toggle-switch.small {
+      width: 36px;
+      height: 20px;
+    }
+
+    .toggle-switch.small .slider:before {
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+    }
+
+    .toggle-switch.small input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+
     .jev-body {
       margin-top: 10px;
+    }
+
+    .jev-threshold-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #ccc;
+    }
+
+    .jev-threshold-input {
+      width: 56px;
+      background: #0f3460;
+      border: 1px solid #1a4a7a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 11px;
+      padding: 4px 6px;
+      text-align: right;
     }
 
     .jev-key-input {
@@ -367,8 +405,8 @@
 
     <div class="jev-section">
       <div class="jev-header">
-        <div class="jev-title">AI診断 (Jev)<span class="jev-badge-beta">BETA</span></div>
-        <label class="toggle-switch" style="width: 36px; height: 20px;">
+        <div class="jev-title"><span data-i18n="jevTitle"></span><span class="jev-badge-beta">BETA</span></div>
+        <label class="toggle-switch small">
           <input type="checkbox" id="jev-toggle">
           <span class="slider"></span>
         </label>
@@ -378,11 +416,25 @@
           type="password"
           class="jev-key-input"
           id="jev-api-key"
-          placeholder="TypeSafe API Key"
+          data-i18n-placeholder="jevApiKeyPlaceholder"
           autocomplete="off"
         >
+        <div class="jev-threshold-row">
+          <span data-i18n="jevThresholdLabel"></span>
+          <input
+            type="number"
+            class="jev-threshold-input"
+            id="jev-threshold"
+            min="3"
+            max="13"
+            step="1"
+          >
+        </div>
+        <div class="jev-hint" data-i18n="jevThresholdNote"></div>
         <div class="jev-hint">
-          過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、コンポーネント名・再レンダリング回数・変更検知の設定のみをJevのAPIに送信します(ページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。<a href="https://console.typesafe.ai" target="_blank">console.typesafe.ai</a>で取得できます。
+          <span data-i18n="jevHint"></span>
+          <span data-i18n="jevGetKey"></span>
+          <a href="https://console.typesafe.ai" target="_blank">console.typesafe.ai</a>
         </div>
       </div>
     </div>

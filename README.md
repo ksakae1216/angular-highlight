@@ -15,6 +15,7 @@ A Chrome extension that highlights Angular components when change detection runs
 - **Zoneless / Signals support** — Works with Angular v16+ Signals and Zoneless apps (v18+)
 - **Performance-safe** — Throttled to avoid impacting the page itself
 - **One-click toggle** — Enable or disable from the popup
+- **AI diagnosis (optional, beta)** — Ask [Jev](https://typesafe.ai) whether a component re-renders excessively, why, and how urgent it is (OFF by default)
 
 ## How It Works
 
@@ -24,6 +25,40 @@ A Chrome extension that highlights Angular components when change detection runs
 | Zoneless / Signals (v16+) | Uses `MutationObserver` to detect DOM changes and traces back to the nearest Angular component |
 
 Angular Ivy (v9+) marks every component host element with `__ngContext__`, which is used to identify component boundaries.
+
+## AI Diagnosis (optional, beta)
+
+When a component re-renders many times in a short period, the extension can ask [Jev](https://typesafe.ai) (a judgment-focused AI model by TypeSafe AI) whether it is excessive, what the likely cause is, and how urgent it is. The result is shown as a red badge above the component; click the badge to dismiss it.
+
+**It is OFF by default.** Nothing is sent until you enter your own TypeSafe API key in the popup and turn the toggle ON.
+
+### What you get
+
+| Item | Values |
+|---|---|
+| Excessive? | Probability (e.g. `60%`) — the badge is shown only when it is 50% or higher |
+| Likely cause | OnPush not used / re-rendered along with its parent / functions or objects recreated on every render / undetermined |
+| Priority | Low / Medium / High |
+
+### When is a component diagnosed?
+
+- A component is diagnosed when it re-renders **N times within 2 seconds**. N defaults to **10** and can be changed in the popup (3–13).
+- **The default of 10 is a rule of thumb, not a statistically derived value.** Lower it to be more sensitive, raise it to reduce noise.
+- **The maximum is 13** because Zone.js-based detection is throttled to 150ms, so at most ~13 re-renders are recorded per 2 seconds. A higher value would never trigger for Zone.js apps. Signals / Zoneless detection uses a 50ms debounce.
+- **Each component is diagnosed once per page load.** Reload the page to diagnose it again. This keeps the number of (billable) API requests small.
+- Zone.js detection only knows that a change detection cycle ran, not that the DOM actually changed, so the re-render count is an approximation.
+
+### Data and security
+
+- Sent to the Jev API (only while enabled): component name, change detection strategy (OnPush / Default), re-render count, detection method, and parent component name. **Page content, URLs, and user input are never sent.**
+- Your API key is stored in `chrome.storage.local` and used only by the extension's background service worker (`background.js`). It is never exposed to the page (`inject.js`).
+- The only host the extension talks to is `https://api.typesafe.ai/*`.
+
+### Setup
+
+1. Get an API key at [console.typesafe.ai](https://console.typesafe.ai)
+2. Open the popup, paste the key into **AI Diagnosis (Jev)**, and turn the toggle ON
+3. Reload the Angular page
 
 ## Installation
 

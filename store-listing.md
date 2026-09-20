@@ -26,11 +26,21 @@ Angular Highlight shows you exactly which components re-render and when — just
 • Debug unexpected change detection cycles
 • Understand how user interactions propagate through your app
 
+**AI diagnosis (optional, beta — OFF by default)**
+When a component re-renders many times in a short period, the extension can ask Jev (https://typesafe.ai), a judgment-focused AI model by TypeSafe AI, whether it is excessive, what the likely cause is, and how urgent it is. The result appears as a red badge above the component (click the badge to dismiss it).
+• Requires your own TypeSafe API key. Enter it in the popup and turn the toggle ON — nothing is sent until you do
+• Trigger: a component re-rendering N times within 2 seconds (default 10, adjustable from 3 to 13 in the popup). The default is a rule of thumb, not a statistically derived value. The maximum is 13 because Zone.js-based detection is throttled to 150ms and records at most ~13 re-renders per 2 seconds
+• Each component is diagnosed only once per page load, so the same component never triggers repeated (billable) API requests
+• Cause: OnPush not used / re-rendered along with its parent / functions or objects recreated on every render / undetermined
+• Priority: Low / Medium / High
+• Data sent to the Jev API (only while enabled): component name, change detection strategy (OnPush or Default), re-render count, detection method, and parent component name. Page content, URLs, and user input are never sent
+• Your API key is stored locally in chrome.storage.local and is used only by the extension's background service worker; it is never exposed to the page
+
 **Technical details**
 • Uses __ngContext__ (Angular Ivy, v9+) to identify component host elements
 • Works on both development and production builds
 • Throttled to 150ms to minimize performance impact on the page
-• No data collection — all state is stored locally via chrome.storage.local
+• No data collection by default — all state is stored locally via chrome.storage.local. The only network request the extension can make is the optional AI diagnosis described above
 
 ## Category
 Developer Tools
@@ -67,3 +77,16 @@ Angular Highlight は、どのコンポーネントがいつ再レンダリン�
 • OnPush最適化が効いているか確認
 • 予期しないチェンジデテクションをデバッグ
 • ユーザー操作がどうコンポーネントツリーに伝播するか理解
+
+**AI診断（任意・ベータ版・デフォルトOFF）**
+コンポーネントが短時間に何度も再レンダリングされたとき、判定特化AIの Jev（TypeSafe AI, https://typesafe.ai）に「過剰かどうか」「原因は何か」「優先度は」を判定させ、結果をコンポーネントの上に赤いバッジで表示します（バッジはクリックで閉じられます）。
+• ご自身の TypeSafe APIキーが必要です。ポップアップでキーを入力してトグルをONにするまで、何も送信されません
+• 判定のきっかけ: 2秒間にN回再レンダリングされたとき（デフォルト10回、ポップアップで3〜13回に変更可能）。デフォルト値は経験的な目安で、統計的な根拠があるわけではありません。上限が13回なのは、Zone.js経路の検知が150msスロットルのため、2秒間に最大約13回までしか記録されないためです
+• 同じコンポーネントはページを読み込み直すまで1回しか判定しないため、同じコンポーネントで課金対象のAPIリクエストが繰り返されることはありません
+• 原因: OnPush未使用 / 親コンポーネントの再描画の巻き込み / 関数・オブジェクトが毎回作り直されている / 特定できず
+• 優先度: 低 / 中 / 高
+• Jev APIに送信する情報（ONの間のみ）: コンポーネント名、変更検知戦略（OnPush or Default）、再レンダリング回数、検知方式、親コンポーネント名。ページの内容・URL・ユーザー入力は送信しません
+• APIキーは chrome.storage.local にローカル保存され、拡張のバックグラウンド（Service Worker）だけが使用します。ページ側には渡されません
+
+**プライバシー**
+デフォルトではデータ収集は一切ありません（状態は chrome.storage.local にローカル保存）。拡張が行う唯一の通信は、上記のAI診断（任意）です。

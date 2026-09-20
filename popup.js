@@ -7,6 +7,9 @@
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = chrome.i18n.getMessage(el.dataset.i18n);
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = chrome.i18n.getMessage(el.dataset.i18nPlaceholder);
+  });
 
   const DEFAULT_COLORS = {
     zone:   '#00c864',
@@ -79,9 +82,31 @@
 
   // ---- Jev (TypeSafe AI) 設定 ----
 
-  chrome.storage.local.get({ jevEnabled: false, jevApiKey: '' }, (result) => {
-    jevToggle.checked = result.jevEnabled;
-    jevApiKey.value = result.jevApiKey;
+  const DEFAULT_JEV_THRESHOLD = 10;
+  const JEV_THRESHOLD_MIN = 3;
+  const JEV_THRESHOLD_MAX = 13; // Zone.js経路は150msスロットルのため2秒で最大約13回
+  const jevThreshold = document.getElementById('jev-threshold');
+
+  // 範囲外・不正な値は許容範囲に丸める
+  function clampThreshold(value) {
+    const n = Math.round(Number(value));
+    if (!Number.isFinite(n)) return DEFAULT_JEV_THRESHOLD;
+    return Math.min(JEV_THRESHOLD_MAX, Math.max(JEV_THRESHOLD_MIN, n));
+  }
+
+  chrome.storage.local.get(
+    { jevEnabled: false, jevApiKey: '', jevThreshold: DEFAULT_JEV_THRESHOLD },
+    (result) => {
+      jevToggle.checked = result.jevEnabled;
+      jevApiKey.value = result.jevApiKey;
+      jevThreshold.value = clampThreshold(result.jevThreshold);
+    }
+  );
+
+  jevThreshold.addEventListener('change', () => {
+    const valid = clampThreshold(jevThreshold.value);
+    jevThreshold.value = valid;
+    chrome.storage.local.set({ jevThreshold: valid });
   });
 
   jevToggle.addEventListener('change', () => {

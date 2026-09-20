@@ -18,11 +18,41 @@
     (document.head || document.documentElement).appendChild(script);
   }
 
+  // inject.js はページ側で動き chrome.i18n を使えないため、翻訳済みの文言をここで用意して渡す
+  function buildJevLabels() {
+    const t = (key) => chrome.i18n.getMessage(key);
+    return {
+      suspect: t('jevBadgeSuspect'),
+      cause: t('jevBadgeCause'),
+      priority: t('jevBadgePriority'),
+      dismiss: t('jevBadgeDismiss'),
+      priorityLevels: {
+        low: t('jevPriorityLow'),
+        medium: t('jevPriorityMedium'),
+        high: t('jevPriorityHigh'),
+      },
+      causes: {
+        missing_onpush: t('jevCauseMissingOnpush'),
+        parent_propagation: t('jevCauseParentPropagation'),
+        event_handler_recreation: t('jevCauseEventHandlerRecreation'),
+        unclear: t('jevCauseUnclear'),
+      },
+    };
+  }
+
   // inject.js のロードを待ってから storage の状態を送信
   injectScript(() => {
+    window.postMessage(
+      { type: 'ANGULAR_HIGHLIGHT_JEV_SET_LABELS', labels: buildJevLabels() },
+      '*'
+    );
     chrome.storage.local.get(
-      { enabled: true, colors: DEFAULT_COLORS, jevEnabled: false },
+      { enabled: true, colors: DEFAULT_COLORS, jevEnabled: false, jevThreshold: 10 },
       (result) => {
+        window.postMessage(
+          { type: 'ANGULAR_HIGHLIGHT_JEV_SET_THRESHOLD', threshold: result.jevThreshold },
+          '*'
+        );
         window.postMessage(
           { type: 'ANGULAR_HIGHLIGHT_SET_ENABLED', enabled: result.enabled },
           '*'
@@ -51,6 +81,12 @@
     if (changes.colors !== undefined) {
       window.postMessage(
         { type: 'ANGULAR_HIGHLIGHT_SET_COLORS', colors: changes.colors.newValue },
+        '*'
+      );
+    }
+    if (changes.jevThreshold !== undefined) {
+      window.postMessage(
+        { type: 'ANGULAR_HIGHLIGHT_JEV_SET_THRESHOLD', threshold: changes.jevThreshold.newValue },
         '*'
       );
     }
