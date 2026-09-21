@@ -27,13 +27,10 @@
     "message": "TypeSafe API Key"
   },
   "jevHint": {
-    "message": "Jev (TypeSafe AI) automatically detects excessive re-rendering. While enabled, only the re-render count, change detection strategy, and detection method are sent to the Jev API (no component names or page content). Your API key is stored locally on this device only."
+    "message": "Jev (TypeSafe AI) automatically detects excessive re-rendering. While enabled, only the re-render count, change detection strategy, app type (Zone.js or Zoneless), and trigger type (e.g. mousemove, timer) are sent to the Jev API (no component names or page content). Your API key is stored locally on this device only."
   },
   "jevThresholdLabel": {
     "message": "Diagnose at N re-renders in 2 sec"
-  },
-  "jevThresholdNote": {
-    "message": "Up to 13. Zone.js detection records at most once per 150 ms, so higher values are less likely to trigger."
   },
   "jevGetKey": {
     "message": "Get an API key at"
@@ -70,5 +67,41 @@
   },
   "jevCauseUnclear": {
     "message": "Cause could not be determined"
+  },
+  "jevBadgeTrigger": {
+    "message": "Trigger"
+  },
+  "jevBadgeFix": {
+    "message": "Fix"
+  },
+  "jevBadgeNature": {
+    "message": "Update type"
+  },
+  "jevIntentional": {
+    "message": "Likely intentional"
+  },
+  "jevNotIntentional": {
+    "message": "Likely unintentional"
+  },
+  "jevCauseFrequentEvent": {
+    "message": "A high-frequency event (mousemove, scroll, etc.) triggers change detection"
+  },
+  "jevCauseTimerPolling": {
+    "message": "A timer, animation frame, or polling triggers change detection"
+  },
+  "jevFixOnPush": {
+    "message": "Switch to OnPush change detection"
+  },
+  "jevFixRunOutsideAngular": {
+    "message": "Run it outside the Angular zone (runOutsideAngular)"
+  },
+  "jevFixThrottle": {
+    "message": "Debounce or throttle the event / timer"
+  },
+  "jevFixSignals": {
+    "message": "Move the state to signals"
+  },
+  "jevFixNoAction": {
+    "message": "No action needed if the updates are expected"
   }
 }

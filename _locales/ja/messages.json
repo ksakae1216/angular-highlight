@@ -27,13 +27,10 @@
     "message": "TypeSafe APIキー"
   },
   "jevHint": {
-    "message": "過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、再レンダリング回数・変更検知の設定・検知方式のみをJevのAPIに送信します(コンポーネント名やページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。"
+    "message": "過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、再レンダリング回数・変更検知の設定・アプリの種類(Zone.jsかZoneless)・きっかけの種類(mousemove、タイマーなど)のみをJevのAPIに送信します(コンポーネント名やページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。"
   },
   "jevThresholdLabel": {
     "message": "2秒間にN回再描画で診断"
-  },
-  "jevThresholdNote": {
-    "message": "上限は13回です。Zone.jsの検知は150msに1回しか記録しないため、これより大きい値では判定されにくくなります。"
   },
   "jevGetKey": {
     "message": "APIキーの取得:"
@@ -70,5 +67,41 @@
   },
   "jevCauseUnclear": {
     "message": "原因を特定できず"
+  },
+  "jevBadgeTrigger": {
+    "message": "きっかけ"
+  },
+  "jevBadgeFix": {
+    "message": "対処"
+  },
+  "jevBadgeNature": {
+    "message": "更新の性質"
+  },
+  "jevIntentional": {
+    "message": "意図的っぽい"
+  },
+  "jevNotIntentional": {
+    "message": "意図的ではなさそう"
+  },
+  "jevCauseFrequentEvent": {
+    "message": "高頻度のイベント（mousemove・scrollなど）で変更検知が走っている"
+  },
+  "jevCauseTimerPolling": {
+    "message": "タイマー・アニメーション・ポーリングで変更検知が走っている"
+  },
+  "jevFixOnPush": {
+    "message": "OnPushにする"
+  },
+  "jevFixRunOutsideAngular": {
+    "message": "Zone外で実行する（runOutsideAngular）"
+  },
+  "jevFixThrottle": {
+    "message": "debounce / throttle で間引く"
+  },
+  "jevFixSignals": {
+    "message": "状態をsignalにする"
+  },
+  "jevFixNoAction": {
+    "message": "意図した更新なら対処不要"
   }
 }

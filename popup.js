@@ -84,7 +84,7 @@
 
   const DEFAULT_JEV_THRESHOLD = 10;
   const JEV_THRESHOLD_MIN = 3;
-  const JEV_THRESHOLD_MAX = 13; // 目安の上限。Zone.js経路は150msに1回しか記録しないため、これより大きいと判定されにくい
+  const JEV_THRESHOLD_MAX = 30;
   const jevThreshold = document.getElementById('jev-threshold');
 
   // 範囲外・不正な値は許容範囲に丸める

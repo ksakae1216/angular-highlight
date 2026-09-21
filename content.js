@@ -26,6 +26,11 @@
       cause: t('jevBadgeCause'),
       priority: t('jevBadgePriority'),
       dismiss: t('jevBadgeDismiss'),
+      trigger: t('jevBadgeTrigger'),
+      fix: t('jevBadgeFix'),
+      nature: t('jevBadgeNature'),
+      intentional: t('jevIntentional'),
+      notIntentional: t('jevNotIntentional'),
       priorityLevels: {
         low: t('jevPriorityLow'),
         medium: t('jevPriorityMedium'),
@@ -35,7 +40,16 @@
         missing_onpush: t('jevCauseMissingOnpush'),
         parent_propagation: t('jevCauseParentPropagation'),
         event_handler_recreation: t('jevCauseEventHandlerRecreation'),
+        frequent_event: t('jevCauseFrequentEvent'),
+        timer_or_polling: t('jevCauseTimerPolling'),
         unclear: t('jevCauseUnclear'),
+      },
+      fixes: {
+        on_push: t('jevFixOnPush'),
+        run_outside_angular: t('jevFixRunOutsideAngular'),
+        throttle: t('jevFixThrottle'),
+        signals: t('jevFixSignals'),
+        no_action: t('jevFixNoAction'),
       },
     };
   }

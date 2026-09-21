@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             excessive_rerender: {
               type: 'noul',
               instructions:
-                'Given a component re-render frequency and its change detection strategy, is this component re-rendering more often than expected?',
+                'Given how often a component re-renders within a time window, its change detection strategy, and what triggers the re-renders (mainTrigger), is this component re-rendering more often than expected?',
             },
             likely_cause: {
               type: 'choice',
@@ -43,8 +43,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                   'Re-renders are likely triggered by an unnecessary re-render of a parent component',
                 event_handler_recreation:
                   'An event handler, object, or array reference is likely being recreated on every render, breaking memoization or triggering signal updates',
+                frequent_event:
+                  'A high-frequency event such as mousemove or scroll is triggering change detection',
+                timer_or_polling:
+                  'A timer, animation frame, or polling request is triggering change detection',
                 unclear: 'Not enough information to determine the cause',
               },
+            },
+            suggested_fix: {
+              type: 'choice',
+              instructions: 'What is the most suitable way to reduce the unnecessary re-rendering?',
+              criteria: {
+                on_push: 'Switch the component to the OnPush change detection strategy',
+                run_outside_angular:
+                  'Run the frequent event handler or timer outside the Angular zone (NgZone.runOutsideAngular)',
+                throttle: 'Debounce or throttle the frequent event or timer',
+                signals: 'Move the component state to signals',
+                no_action: 'No action is needed because the frequent updates are expected',
+              },
+            },
+            intentional_update: {
+              type: 'noul',
+              instructions:
+                'mainTrigger is the most frequent source of change detection (unknown if not available), and isRegularInterval tells whether updates arrive at regular intervals. Are these frequent re-renders likely an intentional update, such as a clock, animation, or polling, rather than a mistake?',
             },
             optimization_priority: {
               type: 'score',
