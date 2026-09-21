@@ -38,6 +38,8 @@ When a component re-renders many times in a short period, the extension can ask 
 |---|---|
 | Excessive? | Probability (e.g. `60%`) — the badge is shown only when it is 50% or higher |
 | Likely cause | OnPush not used / re-rendered along with its parent / functions or objects recreated on every render / undetermined |
+| Suggested fix | Switch to OnPush / run outside the Angular zone / debounce or throttle / move to signals / no action needed |
+| Update type | Likely intentional (clock, animation, polling) or likely unintentional — intentional updates are labeled, not hidden |
 | Priority | Low / Medium / High |
 
 ### When is a component diagnosed?
@@ -50,7 +52,7 @@ When a component re-renders many times in a short period, the extension can ask 
 
 ### Data and security
 
-- Sent to the Jev API (only while enabled): change detection strategy (OnPush / Default), re-render count, detection method, and whether the component has a parent. **Component names, page content, URLs, and user input are never sent.**
+- Sent to the Jev API (only while enabled): change detection strategy (OnPush / Default), re-render count, detection method, whether the component has a parent, and what triggers change detection (only the kind of event or API, such as `mousemove` or `setInterval`). **Component names, page content, URLs, and user input are never sent.**
 - Your API key is stored in `chrome.storage.local` and used only by the extension's background service worker (`background.js`). It is never exposed to the page (`inject.js`).
 - The only host the extension talks to is `https://api.typesafe.ai/*`.
 - See the full [Privacy Policy](./PRIVACY.md).

@@ -165,8 +165,72 @@
   const renderStats = new WeakMap(); // Element -> { onPush, timestamps: number[] }
   // 一度Jevに判定をリクエストしたコンポーネント（ページをリロードするまで再判定しない）
   const analyzed = new WeakSet();
-  const pendingJevRequests = new Map(); // requestId -> Element
+  const pendingJevRequests = new Map(); // requestId -> { el, trigger }
   let jevRequestSeq = 0;
+
+  // ---- 変更検知の「きっかけ」の記録（Zone.js 経路のみ） ----
+  // task.source は "HTMLDivElement.addEventListener:mousemove" や "setInterval" のような文字列。
+  // 要素名やURLは使わず、イベント名 / API の種類だけを許可リストで取り出す。
+  const TRIGGER_EVENTS = new Set([
+    'mousemove', 'pointermove', 'touchmove', 'scroll', 'wheel', 'resize',
+    'click', 'input', 'change', 'keydown', 'keyup', 'focus', 'blur',
+  ]);
+  // 「一定間隔か」を見るのはタイマー系だけ。mousemove などのイベントは、ブラウザが約16〜20msごとに
+  // まとめて発火するため、人の操作でも間隔がそろってしまい、判断材料にならない
+  const INTERVAL_KINDS = new Set(['setInterval', 'setTimeout', 'requestAnimationFrame', 'http']);
+  const TRIGGER_LOG_MAX = 300;
+  const REGULAR_INTERVAL_MAX_CV = 0.3; // 間隔のばらつき（変動係数）がこれ未満なら「一定間隔」とみなす
+  const triggerLog = []; // { t: number, kind: string }
+
+  function classifyTrigger(source) {
+    if (typeof source !== 'string') return 'other';
+    if (source === 'setInterval' || source === 'setTimeout' || source === 'requestAnimationFrame') {
+      return source;
+    }
+    if (source.startsWith('XMLHttpRequest') || source === 'fetch') return 'http';
+    const i = source.lastIndexOf(':');
+    if (source.includes('addEventListener') && i !== -1) {
+      const eventName = source.slice(i + 1);
+      return TRIGGER_EVENTS.has(eventName) ? eventName : 'otherEvent';
+    }
+    return 'other';
+  }
+
+  function recordTrigger(task) {
+    if (!jevAnalysisEnabled) return;
+    triggerLog.push({ t: Date.now(), kind: classifyTrigger(task.source) });
+    if (triggerLog.length > TRIGGER_LOG_MAX) triggerLog.shift();
+  }
+
+  /**
+   * 直近の計測時間内の「きっかけ」を集計する。
+   * ページ全体の変更検知のきっかけなので、コンポーネント単位ではなく近似値として扱う。
+   * Zoneless 等で記録がなければ 'unknown'。
+   */
+  function summarizeTriggers(now) {
+    const recent = triggerLog.filter((e) => now - e.t <= ANALYSIS_WINDOW_MS);
+    if (recent.length === 0) return { mainTrigger: 'unknown' };
+
+    const counts = {};
+    for (const e of recent) counts[e.kind] = (counts[e.kind] || 0) + 1;
+    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const mainTrigger = ranked[0][0];
+    const summary = {
+      mainTrigger,
+      triggerCounts: Object.fromEntries(ranked.slice(0, 3)),
+    };
+
+    const times = recent.filter((e) => e.kind === mainTrigger).map((e) => e.t);
+    if (INTERVAL_KINDS.has(mainTrigger) && times.length >= 4) {
+      const gaps = [];
+      for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
+      const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      const variance = gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length;
+      summary.isRegularInterval = mean > 0 && Math.sqrt(variance) / mean < REGULAR_INTERVAL_MAX_CV;
+      summary.avgIntervalMs = Math.round(mean / 10) * 10;
+    }
+    return summary;
+  }
 
   /**
    * ng.getComponent が使える場合にコンポーネント名を取得
@@ -255,10 +319,12 @@
       windowSeconds: ANALYSIS_WINDOW_MS / 1000,
       detectionPath: colorKey, // 'zone' or 'signal'
       hasParentComponent: parentEl !== null,
+      // 変更検知のきっかけ（イベント名 / API の種類のみ。要素名・URLは含まない）
+      ...summarizeTriggers(Date.now()),
     };
 
     const requestId = `jev_req_${++jevRequestSeq}`;
-    pendingJevRequests.set(requestId, el);
+    pendingJevRequests.set(requestId, { el, trigger: state.mainTrigger });
 
     window.postMessage({ type: 'ANGULAR_HIGHLIGHT_JEV_REQUEST', requestId, state }, '*');
   }
@@ -270,14 +336,39 @@
     cause: 'Cause',
     priority: 'Priority',
     dismiss: 'Click to dismiss',
+    trigger: 'Trigger',
+    fix: 'Fix',
+    nature: 'Update type',
+    intentional: 'Likely intentional',
+    notIntentional: 'Likely unintentional',
     priorityLevels: { low: 'Low', medium: 'Medium', high: 'High' },
     causes: {
       missing_onpush: 'OnPush not used (try OnPush)',
       parent_propagation: 'Re-rendered along with its parent component',
       event_handler_recreation: 'Functions or objects are recreated on every render',
+      frequent_event: 'A high-frequency event (mousemove, scroll, etc.) triggers change detection',
+      timer_or_polling: 'A timer, animation frame, or polling triggers change detection',
       unclear: 'Cause could not be determined',
     },
+    fixes: {
+      on_push: 'Switch to OnPush change detection',
+      run_outside_angular: 'Run it outside the Angular zone (runOutsideAngular)',
+      throttle: 'Debounce or throttle the event / timer',
+      signals: 'Move the state to signals',
+      no_action: 'No action needed if the updates are expected',
+    },
   };
+
+  // Jev の確信度（0〜1）がこの値未満の項目は表示しない。暫定値で、実際の返却値を見て調整する
+  const JEV_MIN_CONFIDENCE = 0.5;
+
+  // Noul には confidence が返らないので、確率が五分五分に近い（この幅の中）ときは表示しない
+  const NOUL_UNSURE_MIN = 0.4;
+  const NOUL_UNSURE_MAX = 0.6;
+
+  function isConfident(answer) {
+    return !!answer && (typeof answer.confidence !== 'number' || answer.confidence >= JEV_MIN_CONFIDENCE);
+  }
 
   /**
    * 優先度スコア（criteria 3段階 → 0〜2 の期待値）を 低/中/高 のラベルに変換する
@@ -291,36 +382,64 @@
 
   /**
    * Jev の判定結果をコンポーネントの上にバッジ表示する
+   * 確信度が低い項目は出さない（「過剰か」の判定だけは、バッジ自体の表示条件なので常に使う）
    */
-  function showJevBadge(el, answers) {
+  function showJevBadge(el, answers, trigger) {
     if (!answers) return;
 
     const excessive = answers.excessive_rerender;
-    const cause = answers.likely_cause;
-    const priority = answers.optimization_priority;
     if (!excessive || excessive.noul < 0.5) return; // 過剰でないと判定されたら何もしない
 
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return;
 
     const pct = Math.round(excessive.noul * 100);
-    const causeText = (cause && jevLabels.causes[cause.choice]) || jevLabels.causes.unclear;
+    const lines = [];
 
-    const parts = [`⚠ ${pct}% ${jevLabels.suspect}`, `${jevLabels.cause}: ${causeText}`];
-    if (priority && typeof priority.score === 'number') {
-      parts.push(`${jevLabels.priority}: ${toPriorityLabel(priority.score)}`);
+    let head = `⚠ ${pct}% ${jevLabels.suspect}`;
+    if (trigger && trigger !== 'unknown') head += ` (${jevLabels.trigger}: ${trigger})`;
+    lines.push(head);
+
+    const cause = answers.likely_cause;
+    if (isConfident(cause)) {
+      const text = jevLabels.causes[cause.choice] || jevLabels.causes.unclear;
+      lines.push(`${jevLabels.cause}: ${text}`);
     }
 
-    const name = getComponentName(el);
+    const fix = answers.suggested_fix;
+    if (isConfident(fix) && jevLabels.fixes[fix.choice]) {
+      lines.push(`${jevLabels.fix}: ${jevLabels.fixes[fix.choice]}`);
+    }
+
+    // 意図的っぽい更新も隠さず、ラベルで区別して見せる
+    const intentional = answers.intentional_update;
+    if (
+      intentional &&
+      typeof intentional.noul === 'number' &&
+      (intentional.noul <= NOUL_UNSURE_MIN || intentional.noul >= NOUL_UNSURE_MAX)
+    ) {
+      const nature = intentional.noul >= 0.5 ? jevLabels.intentional : jevLabels.notIntentional;
+      lines.push(`${jevLabels.nature}: ${nature}`);
+    }
+
+    const priority = answers.optimization_priority;
+    if (isConfident(priority) && typeof priority.score === 'number') {
+      lines.push(`${jevLabels.priority}: ${toPriorityLabel(priority.score)}`);
+    }
+
     const badge = document.createElement('div');
     badge.setAttribute('data-ng-hl-jev', '');
-    badge.title = `${name} (${jevLabels.dismiss})`;
-    badge.textContent = parts.join(' / ');
+    badge.title = `${getComponentName(el)} (${jevLabels.dismiss})`;
+    for (const text of lines) {
+      const line = document.createElement('div');
+      line.textContent = text;
+      badge.appendChild(line);
+    }
     // 判定は1コンポーネントにつき1回だけなので、クリックで閉じるまで残す
     // スクロールに追従するよう、ページ座標の absolute で配置する
     badge.style.cssText = `
       position: absolute;
-      top: ${Math.max(rect.top + window.scrollY - 22, 0)}px;
+      top: 0;
       left: ${rect.left + window.scrollX}px;
       background: rgba(220, 50, 50, 0.9);
       color: white;
@@ -333,6 +452,8 @@
     `;
 
     document.documentElement.appendChild(badge);
+    // 行数に応じた高さを測って、コンポーネントの真上に置く
+    badge.style.top = `${Math.max(rect.top + window.scrollY - badge.offsetHeight - 2, 0)}px`;
     // Zone 外でリスナーを登録（Angular の変更検知を走らせない）
     runOutsideZone(() => {
       badge.addEventListener('click', () => badge.remove());
@@ -354,10 +475,10 @@
     }
     if (event.data.type === 'ANGULAR_HIGHLIGHT_JEV_RESPONSE') {
       const { requestId, result } = event.data;
-      const el = pendingJevRequests.get(requestId);
+      const pending = pendingJevRequests.get(requestId);
       pendingJevRequests.delete(requestId);
-      if (el && result) {
-        showJevBadge(el, result);
+      if (pending && result) {
+        showJevBadge(pending.el, result, pending.trigger);
       }
     }
   });
@@ -391,6 +512,7 @@
         this.name === 'angular' &&
         task.type !== 'microTask'
       ) {
+        recordTrigger(task);
         scheduleHighlight();
       }
 
