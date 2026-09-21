@@ -34,7 +34,7 @@ When AI diagnosis is ON and a component re-renders many times in a short period 
 
 - The change detection strategy of the component (`OnPush`, `Default`, or `unknown`)
 - The number of re-renders within the measurement window and the window length
-- The detection method (Zone.js or Signals / Zoneless)
+- The app type (whether it uses Zone.js or is zoneless)
 - Whether the component has a parent component (yes / no)
 - What triggers change detection: only the kind of event or API (for example `mousemove`, `click`, `input`, `setInterval`, `requestAnimationFrame`, or `http`), how often each occurs, and whether the updates arrive at regular intervals (with the average interval)
 - Your TypeSafe API key, as an authentication header
@@ -109,7 +109,7 @@ AI診断がONで、あるコンポーネントが短時間に何度も再レン�
 
 - コンポーネントの変更検知戦略（`OnPush`、`Default`、または `unknown`）
 - 計測時間内の再レンダリング回数と、計測時間の長さ
-- 検知方式（Zone.js または Signals / Zoneless）
+- アプリの種類（Zone.js を使っているか、Zoneless か）
 - 親コンポーネントがあるかどうか（あり / なし）
 - 変更検知のきっかけ: イベントやAPIの種類だけ（例: `mousemove`、`click`、`input`、`setInterval`、`requestAnimationFrame`、`http`）と、その回数、更新が一定間隔かどうか（平均間隔を含む）
 - 認証ヘッダーとしての、ご自身の TypeSafe APIキー

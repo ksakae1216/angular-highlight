@@ -44,15 +44,16 @@ When a component re-renders many times in a short period, the extension can ask 
 
 ### When is a component diagnosed?
 
-- A component is diagnosed when it re-renders **N times within 2 seconds**. N defaults to **10** and can be changed in the popup (3–13).
+- A component is diagnosed when its DOM actually changes **N times within 2 seconds** (observed with `MutationObserver`). N defaults to **10** and can be changed in the popup (3–30).
 - **The default of 10 is a rule of thumb, not a statistically derived value.** Lower it to be more sensitive, raise it to reduce noise.
-- **The maximum is 13 (a rule of thumb).** Zone.js-based detection records at most once per 150ms, so higher values are less likely to trigger.
+- Only components whose DOM actually changed are counted. Zone.js change detection alone cannot tell which component changed, so it is used for the green highlight and for detecting the trigger, not for counting.
+- **Each component is diagnosed once per page load, and at most 5 diagnoses are made per page load** to keep the number of (billable) requests small.
 - **Each component is diagnosed once per page load.** Reload the page to diagnose it again. This keeps the number of (billable) API requests small.
 - Zone.js detection only knows that a change detection cycle ran, not that the DOM actually changed, so the re-render count is an approximation.
 
 ### Data and security
 
-- Sent to the Jev API (only while enabled): change detection strategy (OnPush / Default), re-render count, detection method, whether the component has a parent, and what triggers change detection (only the kind of event or API, such as `mousemove` or `setInterval`). **Component names, page content, URLs, and user input are never sent.**
+- Sent to the Jev API (only while enabled): change detection strategy (OnPush / Default), re-render count, app type (Zone.js / Zoneless), whether the component has a parent, and what triggers change detection (only the kind of event or API, such as `mousemove` or `setInterval`). **Component names, page content, URLs, and user input are never sent.**
 - Your API key is stored in `chrome.storage.local` and used only by the extension's background service worker (`background.js`). It is never exposed to the page (`inject.js`).
 - The only host the extension talks to is `https://api.typesafe.ai/*`.
 - See the full [Privacy Policy](./PRIVACY.md).

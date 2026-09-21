@@ -145,8 +145,9 @@
     if (!enabled) return;
     const components = findAngularComponents();
     components.forEach((el) => {
+      // Zone.js 経路は「全コンポーネント」を一律に光らせるだけ。どのコンポーネントが実際に
+      // 変わったか分からないので、診断の回数には数えない（数えると全コンポーネントが対象になる）
       highlightElement(el, 'zone');
-      recordRender(el, 'zone');
     });
   }
 
@@ -157,10 +158,13 @@
   let jevAnalysisEnabled = false; // content.js から設定を受け取るまで無効
 
   const ANALYSIS_WINDOW_MS = 2000; // この時間内の再レンダリング回数を見る
-  // この回数以上になったら分析対象にする（popup から変更可能）
-  // 10 は経験的な目安で、統計的な根拠はない。Zone.js 経路は150ms間隔のスロットルがあるため
-  // Zone.js 経路は150msに1回しか記録しないため、大きい値では判定されにくい（popup の入力上限は目安として13）
+  // DOM が実際に変わった回数が、この回数以上になったら分析対象にする（popup から変更可能）
+  // 10 は経験的な目安で、統計的な根拠はない
   let renderThreshold = 10;
+
+  // 1ページ読み込みあたりに Jev へ送るリクエストの上限（料金の想定外の増加を防ぐ保険）
+  const MAX_JEV_REQUESTS_PER_PAGE = 5;
+  let jevRequestCount = 0;
 
   const renderStats = new WeakMap(); // Element -> { onPush, timestamps: number[] }
   // 一度Jevに判定をリクエストしたコンポーネント（ページをリロードするまで再判定しない）
@@ -286,7 +290,7 @@
   /**
    * 再レンダリングを記録し、閾値を超えたら Jev に分析をリクエストする
    */
-  function recordRender(el, colorKey) {
+  function recordRender(el) {
     if (!jevAnalysisEnabled) return;
 
     const now = Date.now();
@@ -299,15 +303,23 @@
     stat.timestamps = stat.timestamps.filter((t) => now - t <= ANALYSIS_WINDOW_MS);
 
     if (stat.timestamps.length >= renderThreshold && !analyzed.has(el)) {
+      if (jevRequestCount >= MAX_JEV_REQUESTS_PER_PAGE) {
+        if (jevRequestCount === MAX_JEV_REQUESTS_PER_PAGE) {
+          jevRequestCount++; // 一度だけログを出す
+          console.debug('[Angular Highlight] Jev diagnosis limit reached for this page');
+        }
+        return;
+      }
+      jevRequestCount++;
       analyzed.add(el);
-      requestJevAnalysis(el, stat, colorKey);
+      requestJevAnalysis(el, stat);
     }
   }
 
   /**
    * content.js 経由で Jev API に判定をリクエストする
    */
-  function requestJevAnalysis(el, stat, colorKey) {
+  function requestJevAnalysis(el, stat) {
     const parentEl = findClosestComponentForJev(el, true);
 
     // コンポーネント名・親の名前は送らない（アプリの内部情報を外に出さないため）。
@@ -317,7 +329,8 @@
         stat.onPush === true ? 'OnPush' : stat.onPush === false ? 'Default' : 'unknown',
       renderCount: stat.timestamps.length,
       windowSeconds: ANALYSIS_WINDOW_MS / 1000,
-      detectionPath: colorKey, // 'zone' or 'signal'
+      // アプリの種類（Zone.js を使っているか）。診断の対象はDOMが変わったコンポーネント
+      appType: typeof Zone !== 'undefined' ? 'zone' : 'zoneless',
       hasParentComponent: parentEl !== null,
       // 変更検知のきっかけ（イベント名 / API の種類のみ。要素名・URLは含まない）
       ...summarizeTriggers(Date.now()),
@@ -525,7 +538,7 @@
   // ---- Phase 2: MutationObserver (Angular Signals / Zoneless Angular 対応) ----
   // Zone.js がある場合は MutationObserver を無効化（Zone.js フックで十分）
 
-  function setupMutationObserver(isZoneless) {
+  function setupMutationObserver() {
     let mutationTimer = null;
     const changedElements = new Set();
 
@@ -573,17 +586,19 @@
 
       // デバウンスして一括ハイライト（50msで十分なバッチングを確保）
       // Zone 外で setTimeout を実行して Angular Zone の runTask フックを避ける
-      if (changedElements.size > 0) {
-        clearTimeout(mutationTimer);
+      // 50ms ごとに最大1回フラッシュする（デバウンスだと、mousemove などで更新が
+      // 途切れず続くときにタイマーが延び続け、いつまでも記録されない）
+      if (changedElements.size > 0 && mutationTimer === null) {
         runOutsideZone(() => {
           mutationTimer = setTimeout(() => {
+            mutationTimer = null;
             if (!enabled) {
               changedElements.clear();
               return;
             }
             changedElements.forEach((el) => {
               highlightElement(el, 'signal');
-              recordRender(el, 'signal');
+              recordRender(el);
             });
             changedElements.clear();
           }, 50);
@@ -595,9 +610,9 @@
       childList: true,
       subtree: true,
       attributes: true,
-      // characterData は頻度が高いので Zoneless の時だけ有効
-      // Zone.js ありの場合は childList + attributes で Signal の主要な変化をカバー
-      characterData: isZoneless,
+      // テキストの更新（{{ value }} の補間など）は characterData で通知されるので、常に監視する。
+      // 診断の回数は「DOMが実際に変わったか」で数えるため、テキストだけの更新も必要
+      characterData: true,
     });
 
     return observer;
@@ -611,7 +626,7 @@
     // Zone.js の有無に関わらず MutationObserver を有効化
     // Zone.js あり → Signals の DOM 変化（青）を検知するため
     // Zone.js なし → Zoneless / Signals のみ（青）
-    setupMutationObserver(!zonePatched);
+    setupMutationObserver();
 
     if (zonePatched) {
       console.debug('[Angular Highlight] Zone.js フック有効 + MutationObserver (Signals対応)');

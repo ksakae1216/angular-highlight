@@ -27,13 +27,10 @@
     "message": "TypeSafe APIキー"
   },
   "jevHint": {
-    "message": "過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、再レンダリング回数・変更検知の設定・検知方式・きっかけの種類(mousemove、タイマーなど)のみをJevのAPIに送信します(コンポーネント名やページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。"
+    "message": "過剰な再レンダリングをJev(TypeSafe AI)が自動判定します。ONの間、再レンダリング回数・変更検知の設定・アプリの種類(Zone.jsかZoneless)・きっかけの種類(mousemove、タイマーなど)のみをJevのAPIに送信します(コンポーネント名やページの内容は送信しません)。APIキーはこの端末のローカルにのみ保存されます。"
   },
   "jevThresholdLabel": {
     "message": "2秒間にN回再描画で診断"
-  },
-  "jevThresholdNote": {
-    "message": "上限は13回です。Zone.jsの検知は150msに1回しか記録しないため、これより大きい値では判定されにくくなります。"
   },
   "jevGetKey": {
     "message": "APIキーの取得:"
